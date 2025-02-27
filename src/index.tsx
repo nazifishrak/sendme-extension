@@ -11,6 +11,9 @@ import {
 import { ShareSession } from "./types";
 import { globalSessions } from "./sessionManager";
 import { SessionsList } from "./components/SessionsList";
+import { handleError } from "./utils/errors";
+import { sendmeInTerminal } from "./utils/terminal";
+import { startSendmeProcess } from "./utils/sendme";
 
 export default function Command() {
   const [isLoading, setIsLoading] = useState(true); // Start with loading state
@@ -41,8 +44,9 @@ export default function Command() {
         throw new Error("No file selected");
       }
 
+      const sessionId = Date.now().toString();
       const newSession: ShareSession = {
-        id: Date.now().toString(),
+        id: sessionId,
         process: null,
         filePath: values.file[0],
         fileName: values.file[0].split("/").pop() || "",
@@ -51,18 +55,33 @@ export default function Command() {
       };
 
       globalSessions.addSession(newSession);
-      await globalSessions.persistSessions();
 
-      await showToast({
-        style: Toast.Style.Success,
-        title: "File selected",
-        message: `Selected ${values.file[0]}`,
-      });
-    } catch (error: any) {
+      try {
+        const ticket = await startSendmeProcess(values.file[0], sessionId);
+        newSession.ticket = ticket;
+        await globalSessions.persistSessions();
+
+        await showToast({
+          style: Toast.Style.Success,
+          title: "File sharing started",
+          message: "Ticket copied to clipboard",
+        });
+      } catch (error) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Error starting share",
+          message: "Try using Terminal fallback",
+          primaryAction: {
+            title: "Use Terminal",
+            onAction: () => sendmeInTerminal(values.file[0]),
+          },
+        });
+      }
+    } catch (error) {
       await showToast({
         style: Toast.Style.Failure,
         title: "Error",
-        message: error.message,
+        message: handleError(error),
       });
     } finally {
       setIsLoading(false);
