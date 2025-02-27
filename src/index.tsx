@@ -7,20 +7,16 @@ import {
   Toast,
   useNavigation,
   Icon,
-  Alert,
 } from "@raycast/api";
 import { ShareSession } from "./types";
 import { globalSessions } from "./sessionManager";
 import { SessionsList } from "./components/SessionsList";
 import { handleError } from "./utils/errors";
-import { sendmeInTerminal } from "./utils/terminal";
-import { startSendmeProcess } from "./utils/sendme";
+import { shareMultipleFiles, showShareResults } from "./utils/fileShareUtils";
 
 export default function Command() {
   const [isLoading, setIsLoading] = useState(true);
   const [sessionCount, setSessionCount] = useState(0);
-  const [processingFiles, setProcessingFiles] = useState(0);
-  const [totalFiles, setTotalFiles] = useState(0);
   const { push } = useNavigation();
 
   // Load persisted sessions when the extension starts
@@ -39,34 +35,6 @@ export default function Command() {
     return unsubscribe;
   }, []);
 
-  // Process a single file and create a session for it
-  const processFile = async (filePath: string): Promise<boolean> => {
-    try {
-      const sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      const fileName = filePath.split("/").pop() || "";
-
-      const newSession: ShareSession = {
-        id: sessionId,
-        process: null,
-        filePath: filePath,
-        fileName: fileName,
-        startTime: new Date(),
-        ticket: "",
-      };
-
-      globalSessions.addSession(newSession);
-
-      const ticket = await startSendmeProcess(filePath, sessionId);
-      newSession.ticket = ticket;
-      await globalSessions.persistSessions();
-
-      return true;
-    } catch (error) {
-      console.error(`Failed to process file: ${filePath}`, error);
-      return false;
-    }
-  };
-
   const handleSubmit = async (values: { file: string[] }) => {
     try {
       setIsLoading(true);
@@ -76,7 +44,6 @@ export default function Command() {
       }
 
       const filePaths = values.file;
-      setTotalFiles(filePaths.length);
 
       // Show initial progress toast for multiple files
       if (filePaths.length > 1) {
@@ -87,49 +54,11 @@ export default function Command() {
         });
       }
 
-      let successCount = 0;
-      let failureCount = 0;
+      // Use our new utility to share multiple files
+      const result = await shareMultipleFiles(filePaths);
 
-      // Process each file sequentially
-      for (let i = 0; i < filePaths.length; i++) {
-        setProcessingFiles(i + 1);
-        const filePath = filePaths[i];
-        const success = await processFile(filePath);
-
-        if (success) {
-          successCount++;
-
-          // For single file or last file in batch, show success
-          if (filePaths.length === 1 || i === filePaths.length - 1) {
-            await showToast({
-              style: Toast.Style.Success,
-              title:
-                filePaths.length === 1
-                  ? "File sharing started"
-                  : `File sharing started for ${successCount} files`,
-              message: "Ticket copied to clipboard",
-            });
-          }
-        } else {
-          failureCount++;
-
-          // For single file or last file in batch, show failure
-          if (filePaths.length === 1 || i === filePaths.length - 1) {
-            await showToast({
-              style: Toast.Style.Failure,
-              title:
-                filePaths.length === 1
-                  ? "Error starting share"
-                  : `Error starting share for ${failureCount} files`,
-              message: "Try using Terminal fallback",
-              primaryAction: {
-                title: "Use Terminal",
-                onAction: () => sendmeInTerminal(filePath),
-              },
-            });
-          }
-        }
-      }
+      // Show results toast
+      await showShareResults(result);
     } catch (error) {
       await showToast({
         style: Toast.Style.Failure,
@@ -162,7 +91,8 @@ export default function Command() {
         id="file"
         title="Select File or Folder"
         canChooseDirectories
-        info="Select a file or folder to share with sendme"
+        allowMultipleSelection={true}
+        info="Select files or folders to share with sendme"
       />
       {sessionCount > 0 && (
         <Form.Description
