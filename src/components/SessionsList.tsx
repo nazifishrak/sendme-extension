@@ -10,9 +10,10 @@ import {
 import { format } from "date-fns";
 import { ShareSession } from "../types";
 import { globalSessions } from "../sessionManager";
+import { SessionDetails } from "./SessionDetails";
 
 export function SessionsList() {
-  const { pop } = useNavigation();
+  const { pop, push } = useNavigation();
   const [sessions, setSessions] = useState<ShareSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const sessionsRef = useRef<ShareSession[]>([]);
@@ -67,6 +68,13 @@ export function SessionsList() {
           ]}
           actions={
             <ActionPanel>
+              <Action
+                title="View Details"
+                icon={Icon.Eye}
+                onAction={() =>
+                  push(<SessionDetails session={session} onClose={pop} />)
+                }
+              />
               <Action title="Go Back" icon={Icon.ArrowLeft} onAction={pop} />
             </ActionPanel>
           }
