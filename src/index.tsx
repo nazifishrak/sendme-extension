@@ -7,6 +7,7 @@ import {
   Toast,
   useNavigation,
   Icon,
+  Alert,
 } from "@raycast/api";
 import { ShareSession } from "./types";
 import { globalSessions } from "./sessionManager";
@@ -16,8 +17,10 @@ import { sendmeInTerminal } from "./utils/terminal";
 import { startSendmeProcess } from "./utils/sendme";
 
 export default function Command() {
-  const [isLoading, setIsLoading] = useState(true); // Start with loading state
+  const [isLoading, setIsLoading] = useState(true);
   const [sessionCount, setSessionCount] = useState(0);
+  const [processingFiles, setProcessingFiles] = useState(0);
+  const [totalFiles, setTotalFiles] = useState(0);
   const { push } = useNavigation();
 
   // Load persisted sessions when the extension starts
@@ -36,46 +39,96 @@ export default function Command() {
     return unsubscribe;
   }, []);
 
-  const handleSubmit = async (values: { file: string[] }) => {
+  // Process a single file and create a session for it
+  const processFile = async (filePath: string): Promise<boolean> => {
     try {
-      setIsLoading(true);
+      const sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const fileName = filePath.split("/").pop() || "";
 
-      if (!values.file?.[0]) {
-        throw new Error("No file selected");
-      }
-
-      const sessionId = Date.now().toString();
       const newSession: ShareSession = {
         id: sessionId,
         process: null,
-        filePath: values.file[0],
-        fileName: values.file[0].split("/").pop() || "",
+        filePath: filePath,
+        fileName: fileName,
         startTime: new Date(),
         ticket: "",
       };
 
       globalSessions.addSession(newSession);
 
-      try {
-        const ticket = await startSendmeProcess(values.file[0], sessionId);
-        newSession.ticket = ticket;
-        await globalSessions.persistSessions();
+      const ticket = await startSendmeProcess(filePath, sessionId);
+      newSession.ticket = ticket;
+      await globalSessions.persistSessions();
 
+      return true;
+    } catch (error) {
+      console.error(`Failed to process file: ${filePath}`, error);
+      return false;
+    }
+  };
+
+  const handleSubmit = async (values: { file: string[] }) => {
+    try {
+      setIsLoading(true);
+
+      if (!values.file?.length) {
+        throw new Error("No files selected");
+      }
+
+      const filePaths = values.file;
+      setTotalFiles(filePaths.length);
+
+      // Show initial progress toast for multiple files
+      if (filePaths.length > 1) {
         await showToast({
-          style: Toast.Style.Success,
-          title: "File sharing started",
-          message: "Ticket copied to clipboard",
+          style: Toast.Style.Animated,
+          title: `Processing ${filePaths.length} files`,
+          message: "Starting file sharing...",
         });
-      } catch (error) {
-        await showToast({
-          style: Toast.Style.Failure,
-          title: "Error starting share",
-          message: "Try using Terminal fallback",
-          primaryAction: {
-            title: "Use Terminal",
-            onAction: () => sendmeInTerminal(values.file[0]),
-          },
-        });
+      }
+
+      let successCount = 0;
+      let failureCount = 0;
+
+      // Process each file sequentially
+      for (let i = 0; i < filePaths.length; i++) {
+        setProcessingFiles(i + 1);
+        const filePath = filePaths[i];
+        const success = await processFile(filePath);
+
+        if (success) {
+          successCount++;
+
+          // For single file or last file in batch, show success
+          if (filePaths.length === 1 || i === filePaths.length - 1) {
+            await showToast({
+              style: Toast.Style.Success,
+              title:
+                filePaths.length === 1
+                  ? "File sharing started"
+                  : `File sharing started for ${successCount} files`,
+              message: "Ticket copied to clipboard",
+            });
+          }
+        } else {
+          failureCount++;
+
+          // For single file or last file in batch, show failure
+          if (filePaths.length === 1 || i === filePaths.length - 1) {
+            await showToast({
+              style: Toast.Style.Failure,
+              title:
+                filePaths.length === 1
+                  ? "Error starting share"
+                  : `Error starting share for ${failureCount} files`,
+              message: "Try using Terminal fallback",
+              primaryAction: {
+                title: "Use Terminal",
+                onAction: () => sendmeInTerminal(filePath),
+              },
+            });
+          }
+        }
       }
     } catch (error) {
       await showToast({

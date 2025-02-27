@@ -103,5 +103,21 @@ export const globalSessions = {
       console.error("Error stopping session:", error);
       throw error;
     }
+  },
+
+  async stopAllSessions(): Promise<void> {
+    const sessionsToStop = [...this.sessions];
+    
+    for (const session of sessionsToStop) {
+      try {
+        await this.stopSession(session.id);
+      } catch (error) {
+        console.error(`Error stopping session ${session.id}:`, error);
+      }
+    }
+    
+    this.sessions = [];
+    this.notifyListeners();
+    await this.persistSessions();
   }
 };
