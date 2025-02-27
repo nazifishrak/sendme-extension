@@ -1,18 +1,18 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "sendme",
-  "title": "SendMe",
-  "description": "Send files across devices without any server, no account required",
+  "title": "Sendme File Share",
+  "description": "Share files using sendme with ease",
   "icon": "command-icon.png",
-  "author": "nazif",
+  "author": "your-name",
   "owner": "nazif",
-  "categories": ["Productivity"],
+  "categories": ["Developer Tools", "Productivity"],
   "license": "MIT",
   "commands": [
     {
       "name": "index",
-      "title": "Send File with Sendme",
-      "description": "Select a file to generate a sendme ticket",
+      "title": "Share File",
+      "description": "Share a file using sendme",
       "mode": "view"
     },
     {

@@ -6,6 +6,9 @@ import {
   ActionPanel,
   Action,
   useNavigation,
+  Clipboard,
+  showToast,
+  Toast,
 } from "@raycast/api";
 import { format } from "date-fns";
 import { ShareSession } from "../types";
@@ -51,7 +54,10 @@ export function SessionsList() {
   }
 
   return (
-    <List isLoading={isLoading}>
+    <List
+      isLoading={isLoading}
+      searchBarPlaceholder="Search active sharing sessions..."
+    >
       {sessions.map((session) => (
         <List.Item
           key={session.id}
@@ -66,16 +72,77 @@ export function SessionsList() {
                 : "Sharing active",
             },
           ]}
+          detail={
+            <List.Item.Detail
+              metadata={
+                <List.Item.Detail.Metadata>
+                  <List.Item.Detail.Metadata.Label
+                    title="Status"
+                    text={session.isDetached ? "Recovered" : "Active"}
+                    icon={{
+                      source: Icon.CircleFilled,
+                      tintColor: session.isDetached
+                        ? Color.Orange
+                        : Color.Green,
+                    }}
+                  />
+                  <List.Item.Detail.Metadata.Separator />
+                  <List.Item.Detail.Metadata.Label
+                    title="File"
+                    text={session.fileName}
+                  />
+                  <List.Item.Detail.Metadata.Label
+                    title="Started"
+                    text={format(session.startTime, "MMM d, yyyy h:mm a")}
+                  />
+                  <List.Item.Detail.Metadata.Separator />
+                  <List.Item.Detail.Metadata.Label
+                    title="Ticket"
+                    text={session.ticket}
+                  />
+                </List.Item.Detail.Metadata>
+              }
+            />
+          }
           actions={
             <ActionPanel>
-              <Action
-                title="View Details"
-                icon={Icon.Eye}
-                onAction={() =>
-                  push(<SessionDetails session={session} onClose={pop} />)
-                }
-              />
-              <Action title="Go Back" icon={Icon.ArrowLeft} onAction={pop} />
+              <ActionPanel.Section>
+                <Action
+                  title="View Details"
+                  icon={Icon.Eye}
+                  onAction={() =>
+                    push(<SessionDetails session={session} onClose={pop} />)
+                  }
+                  shortcut={{ modifiers: ["cmd"], key: "enter" }}
+                />
+                <Action
+                  title="Copy Ticket"
+                  icon={Icon.Clipboard}
+                  onAction={async () => {
+                    await Clipboard.copy(session.ticket);
+                    await showToast({
+                      style: Toast.Style.Success,
+                      title: "Ticket Copied",
+                    });
+                  }}
+                  shortcut={{ modifiers: ["cmd"], key: "c" }}
+                />
+              </ActionPanel.Section>
+              <ActionPanel.Section>
+                <Action
+                  title="Stop Sharing"
+                  icon={Icon.Stop}
+                  style={Action.Style.Destructive}
+                  onAction={() => globalSessions.stopSession(session.id)}
+                  shortcut={{ modifiers: ["cmd"], key: "backspace" }}
+                />
+                <Action
+                  title="Go Back"
+                  icon={Icon.ArrowLeft}
+                  onAction={pop}
+                  shortcut={{ modifiers: ["cmd"], key: "escape" }}
+                />
+              </ActionPanel.Section>
             </ActionPanel>
           }
         />
