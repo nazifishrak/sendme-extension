@@ -6,6 +6,7 @@ import {
   Clipboard,
   showToast,
   Toast,
+  confirmAlert,
 } from "@raycast/api";
 import { format } from "date-fns";
 import { ShareSession } from "../types";
@@ -16,6 +17,32 @@ interface SessionDetailsProps {
 }
 
 export function SessionDetails({ session, onClose }: SessionDetailsProps) {
+  const stopSession = async () => {
+    const confirmed = await confirmAlert({
+      title: `Stop sharing ${session.fileName}?`,
+      message:
+        "This will terminate the sendme process and prevent further downloads.",
+      primaryAction: { title: "Stop Sharing", style: "destructive" },
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await globalSessions.stopSession(session.id);
+      await showToast({
+        style: Toast.Style.Success,
+        title: "File sharing stopped",
+      });
+      onClose();
+    } catch (error) {
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "Error stopping session",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  };
+
   const markdown = `# File Sharing Session: ${session.fileName}
 
 Your file **${session.fileName}** is currently being shared with the following ticket:
@@ -56,6 +83,12 @@ ${session.isDetached ? `\n> ⚠️ This is a recovered session from a previous r
                 title: "Ticket Copied",
               });
             }}
+          />
+          <Action
+            title="Stop Sharing"
+            icon={Icon.Stop}
+            style={Action.Style.Destructive}
+            onAction={stopSession}
           />
           <Action
             title="Back to Sessions List"

@@ -1,7 +1,10 @@
 import { LocalStorage } from "@raycast/api";
 import { ShareSession, StoredSession } from "./types";
+import { exec } from "child_process";
+import { promisify } from "util";
 
 const STORAGE_KEY = "sendme-sessions";
+const execAsync = promisify(exec);
 
 export const globalSessions = {
   sessions: [] as ShareSession[],
@@ -72,6 +75,33 @@ export const globalSessions = {
       }
     } catch (error) {
       console.error("Failed to load sessions:", error);
+    }
+  },
+
+  async stopSession(id: string) {
+    const session = this.sessions.find(s => s.id === id);
+    if (!session) return;
+
+    try {
+      if (session.isDetached && session.pid) {
+        try {
+          process.kill(session.pid);
+        } catch (e) {
+          await execAsync(`kill -9 ${session.pid}`);
+        }
+      } else if (session.process?.pid) {
+        try {
+          process.kill(-session.process.pid);
+        } catch (e) {
+          session.process.kill();
+        }
+      }
+
+      this.removeSession(id);
+      await this.persistSessions();
+    } catch (error) {
+      console.error("Error stopping session:", error);
+      throw error;
     }
   }
 };
