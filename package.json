@@ -24,6 +24,16 @@
       "icon": "command-icon.png"
     }
   ],
+  "preferences": [
+    {
+      "name": "autoInstallSendme",
+      "title": "Auto Install Sendme",
+      "description": "Automatically install sendme when needed without asking",
+      "type": "checkbox",
+      "required": false,
+      "default": false
+    }
+  ],
   "dependencies": {
     "@raycast/api": "^1.55.2",
     "@raycast/utils": "^1.10.0",

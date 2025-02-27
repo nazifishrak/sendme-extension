@@ -3,10 +3,12 @@ import { homedir } from "os";
 import { existsSync } from "fs";
 import { join } from "path";
 import { showHUD, confirmAlert, getPreferenceValues, showToast, Toast, open, Clipboard } from "@raycast/api";
+import { executeCommand, runInTerminal, installSendmeWithBrewViaTerminal } from "./shellHelper";
 import { promisify } from "util";
 
 const execAsync = promisify(exec);
 
+// Define the interface before using it
 interface Preferences {
   autoInstallSendme?: boolean;
 }
@@ -77,81 +79,56 @@ export async function checkSendmeInstalled(): Promise<boolean> {
   return false;
 }
 
-// More robust check if Homebrew is installed
+// Improved Homebrew detection using direct command execution
 async function isHomebrewInstalled(): Promise<boolean> {
   console.log("Checking if Homebrew is installed");
   
-  // First, check common Homebrew binary locations
+  // First check common paths
   const brewPaths = [
     "/usr/local/bin/brew",
-    "/opt/homebrew/bin/brew",
-    "/home/linuxbrew/.linuxbrew/bin/brew"
+    "/opt/homebrew/bin/brew"
   ];
   
-  for (const brewPath of brewPaths) {
-    if (existsSync(brewPath)) {
-      console.log(`Found Homebrew at ${brewPath}`);
+  for (const path of brewPaths) {
+    if (existsSync(path)) {
+      console.log(`Found Homebrew at ${path}`);
       return true;
     }
   }
+
+  // Try running brew directly with shell environment
+  const { exitCode } = await executeCommand("which brew");
+  console.log(`which brew exit code: ${exitCode}`);
   
-  // Next, check if brew is in PATH
-  try {
-    const { stdout, stderr, exitCode } = await runCommand("which", ["brew"]);
-    console.log("which brew result:", { stdout, stderr, exitCode });
-    
-    if (exitCode === 0 && stdout.trim()) {
-      console.log(`Found Homebrew in PATH: ${stdout.trim()}`);
-      return true;
-    }
-  } catch (e) {
-    console.error("Error checking for brew in PATH:", e);
+  if (exitCode === 0) {
+    console.log("Homebrew found in PATH");
+    return true;
   }
   
-  // If all else fails, try running a simple brew command
-  try {
-    const { exitCode } = await runCommand("brew", ["--version"]);
-    console.log(`brew --version exit code: ${exitCode}`);
-    if (exitCode === 0) {
-      console.log("Homebrew is available via brew command");
-      return true;
-    }
-  } catch (e) {
-    console.error("Error running brew --version:", e);
-  }
-  
-  console.log("Homebrew does not appear to be installed");
+  console.log("Homebrew not found");
   return false;
 }
 
-// Improved Homebrew installation
+// Install using Homebrew, but with Terminal as a fallback
 async function installWithHomebrew(): Promise<boolean> {
   try {
+    await showHUD("Checking Homebrew installation...");
+    
+    // First try to verify Homebrew works directly
+    const { stdout, stderr, exitCode } = await executeCommand("brew --version");
+    console.log("Brew version check result:", { stdout, stderr, exitCode });
+    
+    // If we can't run brew commands directly in the extension sandbox
+    if (exitCode !== 0) {
+      console.log("Can't run brew directly, trying via Terminal");
+      return await installSendmeWithBrewViaTerminal();
+    }
+    
+    // If we got here, we can run brew directly in the extension
+    console.log("Installing sendme via brew directly");
     await showHUD("Installing sendme with Homebrew...");
-    console.log("Installing sendme with Homebrew");
     
-    // Test Homebrew functionality first
-    const versionCheck = await runCommand("brew", ["--version"]);
-    console.log("brew --version result:", versionCheck);
-    
-    if (versionCheck.exitCode !== 0) {
-      console.error("Homebrew doesn't seem to be working properly");
-      throw new Error("Homebrew doesn't seem to be working properly");
-    }
-    
-    // Add the tap if needed
-    console.log("Adding tap n0-computer/iroh");
-    const tapResult = await runCommand("brew", ["tap", "n0-computer/iroh"]);
-    console.log("Tap result:", tapResult);
-    
-    if (tapResult.exitCode !== 0) {
-      console.warn("Tap command failed, but we'll continue anyway:", tapResult.stderr);
-      // We'll continue anyway in case the tap already exists or isn't needed
-    }
-    
-    // Install sendme
-    console.log("Installing sendme via brew");
-    const result = await runCommand("brew", ["install", "sendme"]);
+    const result = await executeCommand("brew install sendme");
     console.log("Brew install result:", result);
     
     if (result.exitCode === 0) {
@@ -160,20 +137,15 @@ async function installWithHomebrew(): Promise<boolean> {
         title: "Installation successful",
         message: "sendme was installed using Homebrew"
       });
-      
-      // Verify the installation
-      const whichResult = await runCommand("which", ["sendme"]);
-      console.log("Which sendme result after install:", whichResult);
-      
       return true;
     } else {
-      console.error("Installation failed with exit code", result.exitCode);
-      console.error("stderr:", result.stderr);
-      throw new Error(`Installation failed: ${result.stderr}`);
+      console.log("Brew direct install failed, trying via Terminal");
+      return await installSendmeWithBrewViaTerminal();
     }
   } catch (error) {
-    console.error("Homebrew installation failed:", error);
-    return false;
+    console.error("Homebrew installation error:", error);
+    // Fall back to Terminal method
+    return await installSendmeWithBrewViaTerminal();
   }
 }
 
@@ -204,15 +176,8 @@ async function installWithCurl(): Promise<boolean> {
       message: "Follow the instructions in Terminal to complete installation"
     });
     
-    // Run the command in a new Terminal window - double the escaped quotes to work in AppleScript
-    const appleScript = `
-      tell application "Terminal"
-        activate
-        do script "cd \\"${homedir().replace(/"/g, '\\\\"')}\\" && curl -fsSL https://iroh.computer/sendme.sh | sh"
-      end tell
-    `;
-    
-    await execAsync(`osascript -e '${appleScript}'`);
+    // Use runInTerminal from shellHelper instead of direct AppleScript execution
+    await runInTerminal("curl -fsSL https://iroh.computer/sendme.sh | sh", homedir());
     
     await showToast({
       style: Toast.Style.Success,
@@ -228,7 +193,7 @@ async function installWithCurl(): Promise<boolean> {
   }
 }
 
-// Main installation entry point with more verbose logging
+// Updated install process
 export async function installSendme(): Promise<boolean> {
   console.log("Starting sendme installation");
   
@@ -245,12 +210,12 @@ export async function installSendme(): Promise<boolean> {
     const isNowInstalled = await checkSendmeInstalled();
     console.log("Is sendme now installed after brew attempt?", isNowInstalled);
     
-    if (brewSuccess && isNowInstalled) {
+    if (isNowInstalled) {
       console.log("Homebrew installation successful");
       return true;
     }
     
-    console.log("Homebrew installation failed or didn't create sendme, trying curl");
+    console.log("Homebrew installation didn't create sendme, trying curl");
   } else {
     console.log("Homebrew not available, skipping to curl method");
   }

@@ -77,7 +77,7 @@ export default function Command() {
         });
       }
 
-      // Use our new utility to share multiple files
+
       const result = await shareMultipleFiles(filePaths);
 
       // Show results toast
