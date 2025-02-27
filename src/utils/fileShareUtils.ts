@@ -57,20 +57,8 @@ export async function processFile(filePath: string): Promise<{
     const sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const fileName = filePath.split("/").pop() || "";
 
-    const newSession: ShareSession = {
-      id: sessionId,
-      process: null,
-      filePath: filePath,
-      fileName: fileName,
-      startTime: new Date(),
-      ticket: "",
-    };
-
-    globalSessions.addSession(newSession);
-
+    // Use await here as startSendmeProcess is now async
     const ticket = await startSendmeProcess(filePath, sessionId);
-    newSession.ticket = ticket;
-    await globalSessions.persistSessions();
 
     return {
       success: true,

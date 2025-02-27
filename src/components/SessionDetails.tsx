@@ -59,7 +59,7 @@ ${session.ticket}
 Tell the recipient to run:
 
 \`\`\`
-sendme receive ${session.ticket}
+./sendme receive ${session.ticket}
 \`\`\`
 
 ## Session Details

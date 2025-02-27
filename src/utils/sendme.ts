@@ -5,24 +5,62 @@ import { spawn } from "child_process";
 import { Clipboard } from "@raycast/api";
 import { ShareSession } from "../types";
 import { globalSessions } from "../sessionManager";
+import { checkSendmeInstalled } from "./sendmeInstaller";
 
-export const getSendmePath = (): string => {
-  const possiblePaths = [
-    "./sendme",
-    path.join(homedir(), "sendme"),
+// Better path finding with preference for local ./sendme
+export const getSendmePath = async (): Promise<string> => {
+  // Try local path first - most reliable
+  if (fs.existsSync("./sendme")) {
+    return "./sendme";
+  }
+  
+  // Check home directory for sendme
+  const homeDirSendme = path.join(homedir(), "sendme");
+  if (fs.existsSync(homeDirSendme)) {
+    return homeDirSendme;
+  }
+  
+  // Check common brew locations
+  const brewPaths = [
     "/usr/local/bin/sendme",
-    "/opt/homebrew/bin/sendme",
+    "/opt/homebrew/bin/sendme"
   ];
-
-  for (const p of possiblePaths) {
-    try {
-      if (fs.existsSync(p)) return p;
-    } catch (e) {
-      continue;
+  
+  for (const brewPath of brewPaths) {
+    if (fs.existsSync(brewPath)) {
+      return brewPath;
     }
   }
-
-  return "sendme"; // Fallback to PATH lookup
+  
+  // Last resort - check path
+  try {
+    const { stdout } = await new Promise<{stdout: string, stderr: string}>((resolve) => {
+      const proc = spawn("which", ["sendme"]);
+      let stdout = "";
+      let stderr = "";
+      
+      proc.stdout.on("data", (data) => {
+        stdout += data.toString().trim();
+      });
+      
+      proc.stderr.on("data", (data) => {
+        stderr += data.toString().trim();
+      });
+      
+      proc.on("close", () => {
+        resolve({ stdout, stderr });
+      });
+    });
+    
+    if (stdout && fs.existsSync(stdout)) {
+      return stdout;
+    }
+  } catch (e) {
+    // Ignore errors with which command
+  }
+  
+  // If nothing works, default to './sendme' which is our expected location
+  return "./sendme";
 };
 
 export const extractTicket = (output: string): string | null => {
@@ -43,10 +81,13 @@ export const extractTicket = (output: string): string | null => {
   return null;
 };
 
-export const startSendmeProcess = (filePath: string, sessionId: string): Promise<string> => {
-  return new Promise((resolve, reject) => {
+export const startSendmeProcess = async (filePath: string, sessionId: string): Promise<string> => {
+  return new Promise(async (resolve, reject) => {
     try {
-      const sendmePath = getSendmePath();
+      // Get the correct sendme path
+      const sendmePath = await getSendmePath();
+      console.log(`Using sendme path: ${sendmePath}`);
+      
       // Get filename for display
       const fileName = path.basename(filePath);
       
@@ -63,7 +104,25 @@ export const startSendmeProcess = (filePath: string, sessionId: string): Promise
       // Add session at the beginning with empty ticket
       globalSessions.addSession(newSession);
       
-      const childProcess = spawn(sendmePath, ["send", filePath], {
+      // Try to ensure we always use an absolute path for sendmePath
+      let resolvedPath = sendmePath;
+      if (sendmePath === "./sendme" || sendmePath === "sendme") {
+        // Check if ./sendme exists in the current directory
+        if (fs.existsSync("./sendme")) {
+          resolvedPath = path.resolve("./sendme");
+        } else {
+          // Try the home directory as fallback
+          const homePathSendme = path.join(homedir(), "sendme");
+          if (fs.existsSync(homePathSendme)) {
+            resolvedPath = homePathSendme;
+          }
+        }
+      }
+      
+      console.log(`Resolved sendme path: ${resolvedPath}`);
+      
+      // Spawn the process with the resolved path
+      const childProcess = spawn(resolvedPath, ["send", filePath], {
         detached: true,
         stdio: ["ignore", "pipe", "pipe"],
         cwd: homedir(),
@@ -74,7 +133,9 @@ export const startSendmeProcess = (filePath: string, sessionId: string): Promise
       let extractedTicket: string | null = null;
 
       childProcess.stdout.on("data", (data) => {
-        outputBuffer += data.toString();
+        const chunk = data.toString();
+        console.log("Process stdout:", chunk);
+        outputBuffer += chunk;
         const ticket = extractTicket(outputBuffer);
         if (ticket && !extractedTicket) {
           extractedTicket = ticket;
@@ -96,7 +157,9 @@ export const startSendmeProcess = (filePath: string, sessionId: string): Promise
       });
 
       childProcess.stderr.on("data", (data) => {
-        outputBuffer += data.toString();
+        const chunk = data.toString();
+        console.log("Process stderr:", chunk);
+        outputBuffer += chunk;
         const ticket = extractTicket(outputBuffer);
         if (ticket && !extractedTicket) {
           extractedTicket = ticket;
@@ -117,7 +180,11 @@ export const startSendmeProcess = (filePath: string, sessionId: string): Promise
         }
       });
 
-      childProcess.on("error", reject);
+      childProcess.on("error", (err) => {
+        console.error("Process error:", err);
+        reject(err);
+      });
+      
       childProcess.unref();
 
       // Set timeout for ticket extraction
@@ -127,6 +194,7 @@ export const startSendmeProcess = (filePath: string, sessionId: string): Promise
         }
       }, 5000);
     } catch (error) {
+      console.error("Error in startSendmeProcess:", error);
       reject(error);
     }
   });

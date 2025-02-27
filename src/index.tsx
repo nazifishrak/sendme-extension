@@ -13,19 +13,33 @@ import { globalSessions } from "./sessionManager";
 import { SessionsList } from "./components/SessionsList";
 import { handleError } from "./utils/errors";
 import { shareMultipleFiles, showShareResults } from "./utils/fileShareUtils";
+import { ensureSendmeAvailable } from "./utils/sendmeInstaller";
 
 export default function Command() {
   const [isLoading, setIsLoading] = useState(true);
   const [sessionCount, setSessionCount] = useState(0);
+  const [sendmeInstalled, setSendmeInstalled] = useState(false);
   const { push } = useNavigation();
 
-  // Load persisted sessions when the extension starts
+  // Check if sendme is installed and load persisted sessions
   useEffect(() => {
-    async function loadPersistedSessions() {
-      await globalSessions.loadSessions();
-      setIsLoading(false);
+    async function init() {
+      try {
+        // First check if sendme is available
+        const isSendmeAvailable = await ensureSendmeAvailable();
+        console.log("Sendme available:", isSendmeAvailable);
+        setSendmeInstalled(isSendmeAvailable);
+
+        // Then load persisted sessions
+        await globalSessions.loadSessions();
+      } catch (error) {
+        console.error("Init error:", error);
+      } finally {
+        setIsLoading(false);
+      }
     }
-    loadPersistedSessions();
+
+    init();
   }, []);
 
   useEffect(() => {
@@ -37,6 +51,15 @@ export default function Command() {
 
   const handleSubmit = async (values: { file: string[] }) => {
     try {
+      // First check if sendme is installed - if not, try to install it
+      if (!sendmeInstalled) {
+        const isInstalled = await ensureSendmeAvailable();
+        if (!isInstalled) {
+          throw new Error("Sendme is required but not installed");
+        }
+        setSendmeInstalled(true);
+      }
+
       setIsLoading(true);
 
       if (!values.file?.length) {
@@ -70,12 +93,45 @@ export default function Command() {
     }
   };
 
+  const triggerSendmeInstall = async () => {
+    try {
+      setIsLoading(true);
+      const isInstalled = await ensureSendmeAvailable();
+      setSendmeInstalled(isInstalled);
+
+      if (isInstalled) {
+        await showToast({
+          style: Toast.Style.Success,
+          title: "Sendme installed successfully",
+          message: "You can now share files",
+        });
+      }
+    } catch (error) {
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "Installation failed",
+        message: handleError(error),
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Form
       isLoading={isLoading}
       actions={
         <ActionPanel>
-          <Action.SubmitForm title="Share File" onSubmit={handleSubmit} />
+          {sendmeInstalled ? (
+            <Action.SubmitForm title="Share File" onSubmit={handleSubmit} />
+          ) : (
+            <Action
+              title="Install Sendme"
+              icon={Icon.Download}
+              onAction={triggerSendmeInstall}
+            />
+          )}
+
           {sessionCount > 0 && (
             <Action
               title={`Manage Sessions (${sessionCount})`}
@@ -94,10 +150,18 @@ export default function Command() {
         allowMultipleSelection={true}
         info="Select files or folders to share with sendme"
       />
+
       {sessionCount > 0 && (
         <Form.Description
           title={`Active Sessions (⌘⇧U to manage)`}
           text={`You have ${sessionCount} active sharing session(s)`}
+        />
+      )}
+
+      {!sendmeInstalled && (
+        <Form.Description
+          title="Sendme Not Installed"
+          text="Sendme is required to share files. Click 'Install Sendme' to set up the tool."
         />
       )}
     </Form>
