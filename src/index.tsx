@@ -1,11 +1,30 @@
 import { useState, useEffect } from "react";
-import { Form, ActionPanel, Action, showToast, Toast } from "@raycast/api";
+import {
+  Form,
+  ActionPanel,
+  Action,
+  showToast,
+  Toast,
+  useNavigation,
+  Icon,
+} from "@raycast/api";
 import { ShareSession } from "./types";
 import { globalSessions } from "./sessionManager";
+import { SessionsList } from "./components/SessionsList";
 
 export default function Command() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start with loading state
   const [sessionCount, setSessionCount] = useState(0);
+  const { push } = useNavigation();
+
+  // Load persisted sessions when the extension starts
+  useEffect(() => {
+    async function loadPersistedSessions() {
+      await globalSessions.loadSessions();
+      setIsLoading(false);
+    }
+    loadPersistedSessions();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = globalSessions.subscribe(() => {
@@ -32,6 +51,7 @@ export default function Command() {
       };
 
       globalSessions.addSession(newSession);
+      await globalSessions.persistSessions();
 
       await showToast({
         style: Toast.Style.Success,
@@ -55,6 +75,14 @@ export default function Command() {
       actions={
         <ActionPanel>
           <Action.SubmitForm title="Share File" onSubmit={handleSubmit} />
+          {sessionCount > 0 && (
+            <Action
+              title={`Manage Sessions (${sessionCount})`}
+              icon={Icon.List}
+              onAction={() => push(<SessionsList />)}
+              shortcut={{ modifiers: ["cmd", "shift"], key: "u" }}
+            />
+          )}
         </ActionPanel>
       }
     >

@@ -1,4 +1,7 @@
-import { ShareSession } from "./types";
+import { LocalStorage } from "@raycast/api";
+import { ShareSession, StoredSession } from "./types";
+
+const STORAGE_KEY = "sendme-sessions";
 
 export const globalSessions = {
   sessions: [] as ShareSession[],
@@ -29,4 +32,46 @@ export const globalSessions = {
   notifyListeners() {
     this.listeners.forEach((listener) => listener());
   },
+
+  getStorableSessions(): StoredSession[] {
+    return this.sessions
+      .filter((s) => s.pid !== undefined)
+      .map((s) => ({
+        id: s.id,
+        pid: s.pid as number,
+        ticket: s.ticket,
+        filePath: s.filePath,
+        fileName: s.fileName,
+        startTime: s.startTime.toISOString(),
+      }));
+  },
+
+  async persistSessions() {
+    try {
+      const sessions = this.getStorableSessions();
+      await LocalStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+    } catch (error) {
+      console.error("Failed to persist sessions:", error);
+    }
+  },
+
+  async loadSessions() {
+    try {
+      const stored = await LocalStorage.getItem<string>(STORAGE_KEY);
+      if (stored) {
+        const sessions = JSON.parse(stored) as StoredSession[];
+        sessions.forEach(s => {
+          const session: ShareSession = {
+            ...s,
+            process: null,
+            startTime: new Date(s.startTime),
+            isDetached: true
+          };
+          this.addSession(session);
+        });
+      }
+    } catch (error) {
+      console.error("Failed to load sessions:", error);
+    }
+  }
 };
