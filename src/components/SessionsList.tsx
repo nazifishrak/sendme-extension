@@ -113,7 +113,7 @@ export function SessionsList() {
                   onAction={() =>
                     push(<SessionDetails session={session} onClose={pop} />)
                   }
-                  shortcut={{ modifiers: ["cmd"], key: "enter" }}
+                  shortcut={{ modifiers: ["cmd"], key: "d" }}
                 />
                 <Action
                   title="Copy Ticket"
@@ -140,7 +140,7 @@ export function SessionsList() {
                   title="Go Back"
                   icon={Icon.ArrowLeft}
                   onAction={pop}
-                  shortcut={{ modifiers: ["cmd"], key: "escape" }}
+                  shortcut={{ modifiers: ["cmd"], key: "b" }}
                 />
               </ActionPanel.Section>
             </ActionPanel>
