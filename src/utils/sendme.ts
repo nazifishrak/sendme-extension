@@ -2,9 +2,9 @@ import { homedir } from "os";
 import path from "path";
 import fs from "fs";
 import { spawn } from "child_process";
+import { Clipboard } from "@raycast/api";
 import { ShareSession } from "../types";
 import { globalSessions } from "../sessionManager";
-import { Clipboard } from "@raycast/api";
 
 export const getSendmePath = (): string => {
   const possiblePaths = [
@@ -50,6 +50,19 @@ export const startSendmeProcess = (filePath: string, sessionId: string): Promise
       // Get filename for display
       const fileName = path.basename(filePath);
       
+      // Create initial session with empty ticket
+      const newSession: ShareSession = {
+        id: sessionId,
+        process: null,
+        filePath,
+        fileName,
+        startTime: new Date(),
+        ticket: "",
+      };
+      
+      // Add session at the beginning with empty ticket
+      globalSessions.addSession(newSession);
+      
       const childProcess = spawn(sendmePath, ["send", filePath], {
         detached: true,
         stdio: ["ignore", "pipe", "pipe"],
@@ -66,22 +79,18 @@ export const startSendmeProcess = (filePath: string, sessionId: string): Promise
         if (ticket && !extractedTicket) {
           extractedTicket = ticket;
           
-          // Add session to the global sessions list
-          const newSession: ShareSession = {
-            id: sessionId,
-            process: childProcess,
-            pid: childProcess.pid,
-            ticket: ticket,
-            filePath,
-            fileName, // Now fileName is defined
-            startTime: new Date(),
-          };
-
-          globalSessions.addSession(newSession);
-
+          // Update existing session with process and ticket
+          const session = globalSessions.getSessions().find(s => s.id === sessionId);
+          if (session) {
+            session.process = childProcess;
+            session.pid = childProcess.pid;
+            session.ticket = ticket;
+            globalSessions.notifyListeners();
+            globalSessions.persistSessions();
+          }
+          
           // Copy to clipboard immediately
           Clipboard.copy(ticket);
-          
           resolve(ticket);
         }
       });
@@ -92,35 +101,24 @@ export const startSendmeProcess = (filePath: string, sessionId: string): Promise
         if (ticket && !extractedTicket) {
           extractedTicket = ticket;
           
-          // Add session to the global sessions list  
-          const newSession: ShareSession = {
-            id: sessionId,
-            process: childProcess,
-            pid: childProcess.pid,
-            ticket: ticket,
-            filePath,
-            fileName, // Now fileName is defined
-            startTime: new Date(),
-          };
-
-          globalSessions.addSession(newSession);
+          // Update existing session with process and ticket
+          const session = globalSessions.getSessions().find(s => s.id === sessionId);
+          if (session) {
+            session.process = childProcess;
+            session.pid = childProcess.pid;
+            session.ticket = ticket;
+            globalSessions.notifyListeners();
+            globalSessions.persistSessions();
+          }
           
           // Copy to clipboard immediately
           Clipboard.copy(ticket);
-          
           resolve(ticket);
         }
       });
 
       childProcess.on("error", reject);
       childProcess.unref();
-
-      // Update session with process info
-      const session = globalSessions.getSessions().find(s => s.id === sessionId);
-      if (session) {
-        session.process = childProcess;
-        session.pid = childProcess.pid;
-      }
 
       // Set timeout for ticket extraction
       setTimeout(() => {

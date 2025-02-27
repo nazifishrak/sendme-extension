@@ -10,6 +10,7 @@ import {
 } from "@raycast/api";
 import { format } from "date-fns";
 import { ShareSession } from "../types";
+import { globalSessions } from "../sessionManager";
 
 interface SessionDetailsProps {
   session: ShareSession;

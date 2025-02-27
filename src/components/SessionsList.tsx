@@ -36,6 +36,22 @@ export function SessionsList() {
     return unsubscribe;
   }, []);
 
+  const handleStopSession = async (sessionId: string) => {
+    try {
+      await globalSessions.stopSession(sessionId);
+      await showToast({
+        style: Toast.Style.Success,
+        title: "File sharing stopped",
+      });
+    } catch (error) {
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "Error stopping session",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  };
+
   if (!isLoading && sessions.length === 0) {
     return (
       <List>
@@ -133,7 +149,7 @@ export function SessionsList() {
                   title="Stop Sharing"
                   icon={Icon.Stop}
                   style={Action.Style.Destructive}
-                  onAction={() => globalSessions.stopSession(session.id)}
+                  onAction={() => handleStopSession(session.id)}
                   shortcut={{ modifiers: ["cmd"], key: "backspace" }}
                 />
                 <Action

@@ -12,14 +12,16 @@
     {
       "name": "index",
       "title": "Share File",
-      "description": "Share a file using sendme",
-      "mode": "view"
+      "description": "Share File",
+      "mode": "view",
+      "icon": "command-icon.png"
     },
     {
       "name": "receive",
-      "title": "Receive File with Sendme",
+      "title": "Receive File",
       "description": "Download a file by pasting a sendme ticket",
-      "mode": "view"
+      "mode": "view",
+      "icon": "command-icon.png"
     }
   ],
   "dependencies": {
