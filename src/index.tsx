@@ -1,10 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Form, ActionPanel, Action, showToast, Toast } from "@raycast/api";
 import { ShareSession } from "./types";
+import { globalSessions } from "./sessionManager";
 
 export default function Command() {
   const [isLoading, setIsLoading] = useState(false);
-  const [sessions, setSessions] = useState<ShareSession[]>([]);
+  const [sessionCount, setSessionCount] = useState(0);
+
+  useEffect(() => {
+    const unsubscribe = globalSessions.subscribe(() => {
+      setSessionCount(globalSessions.getSessions().length);
+    });
+    return unsubscribe;
+  }, []);
 
   const handleSubmit = async (values: { file: string[] }) => {
     try {
@@ -14,7 +22,6 @@ export default function Command() {
         throw new Error("No file selected");
       }
 
-      // Create new session
       const newSession: ShareSession = {
         id: Date.now().toString(),
         process: null,
@@ -24,7 +31,7 @@ export default function Command() {
         ticket: "",
       };
 
-      setSessions([...sessions, newSession]);
+      globalSessions.addSession(newSession);
 
       await showToast({
         style: Toast.Style.Success,
@@ -57,6 +64,12 @@ export default function Command() {
         canChooseDirectories
         info="Select a file or folder to share with sendme"
       />
+      {sessionCount > 0 && (
+        <Form.Description
+          title="Active Sessions"
+          text={`You have ${sessionCount} active sharing session(s)`}
+        />
+      )}
     </Form>
   );
 }
