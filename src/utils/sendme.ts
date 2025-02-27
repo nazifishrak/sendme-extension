@@ -4,6 +4,7 @@ import fs from "fs";
 import { spawn } from "child_process";
 import { ShareSession } from "../types";
 import { globalSessions } from "../sessionManager";
+import { Clipboard } from "@raycast/api";
 
 export const getSendmePath = (): string => {
   const possiblePaths = [
@@ -46,6 +47,9 @@ export const startSendmeProcess = (filePath: string, sessionId: string): Promise
   return new Promise((resolve, reject) => {
     try {
       const sendmePath = getSendmePath();
+      // Get filename for display
+      const fileName = path.basename(filePath);
+      
       const childProcess = spawn(sendmePath, ["send", filePath], {
         detached: true,
         stdio: ["ignore", "pipe", "pipe"],
@@ -61,6 +65,23 @@ export const startSendmeProcess = (filePath: string, sessionId: string): Promise
         const ticket = extractTicket(outputBuffer);
         if (ticket && !extractedTicket) {
           extractedTicket = ticket;
+          
+          // Add session to the global sessions list
+          const newSession: ShareSession = {
+            id: sessionId,
+            process: childProcess,
+            pid: childProcess.pid,
+            ticket: ticket,
+            filePath,
+            fileName, // Now fileName is defined
+            startTime: new Date(),
+          };
+
+          globalSessions.addSession(newSession);
+
+          // Copy to clipboard immediately
+          Clipboard.copy(ticket);
+          
           resolve(ticket);
         }
       });
@@ -70,6 +91,23 @@ export const startSendmeProcess = (filePath: string, sessionId: string): Promise
         const ticket = extractTicket(outputBuffer);
         if (ticket && !extractedTicket) {
           extractedTicket = ticket;
+          
+          // Add session to the global sessions list  
+          const newSession: ShareSession = {
+            id: sessionId,
+            process: childProcess,
+            pid: childProcess.pid,
+            ticket: ticket,
+            filePath,
+            fileName, // Now fileName is defined
+            startTime: new Date(),
+          };
+
+          globalSessions.addSession(newSession);
+          
+          // Copy to clipboard immediately
+          Clipboard.copy(ticket);
+          
           resolve(ticket);
         }
       });
