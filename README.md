@@ -12,6 +12,9 @@
 
 Share files directly between devices with no intermediary servers. Your data never leaves the direct connection between sender and receiver.
 ![Direct Transfer](image.png)
+![alt text](metadata/image3.png)
+![alt text](metadata/screenshot2.png)
+![alt text](metadata/screenshot1.png)
 
 ### 🔒 Secure by Design
 
