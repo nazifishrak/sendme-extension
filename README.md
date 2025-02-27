@@ -1,49 +1,73 @@
-# README.md
+# Share files free instantly from Raycast
 
-# Raycast Extension
+![Sendme for Raycast](./assets/command-icon.png)
 
-This project is a Raycast extension that provides a simple command to greet the user.
+## The Easiest Way to Share Files Directly from Raycast
 
-## Project Structure
+**Sendme** brings effortless file sharing to your Raycast environment, allowing you to share files peer-to-peer without any servers, accounts, or configuration.
 
-```
-raycast-extension
-├── src
-│   ├── index.tsx         # Entry point of the extension
-│   ├── commands
-│   │   └── hello.tsx     # Command to greet the user
-│   └── types
-│       └── index.ts      # Type definitions for the extension
-├── package.json           # NPM configuration file
-├── tsconfig.json          # TypeScript configuration file
-├── .gitignore             # Git ignore file
-└── README.md              # Project documentation
-```
+## Why Sendme for Raycast is Revolutionary
 
-## Setup Instructions
+### 🚀 True P2P File Sharing
 
-1. Clone the repository:
-   ```
-   git clone <repository-url>
-   ```
+Share files directly between devices with no intermediary servers. Your data never leaves the direct connection between sender and receiver.
 
-2. Navigate to the project directory:
-   ```
-   cd raycast-extension
-   ```
+### 🔒 Secure by Design
 
-3. Install the dependencies:
-   ```
-   npm install
-   ```
+Built on Iroh's robust encryption technology, ensuring your transfers are secure and private end-to-end.
 
-4. Build the project:
-   ```
-   npm run build
-   ```
+### 🌐 No IP Addresses or Network Configuration
 
-5. Run the extension in Raycast.
+Forget about port forwarding, IP addresses, or network settings. Sendme handles all the connection complexity behind the scenes.
 
-## Usage
+### ⚡️ Lightning Fast
 
-To use the extension, simply invoke the "Hello" command from within Raycast. It will greet you with a friendly message!
+Direct peer connections mean maximum transfer speeds limited only by your network.
+
+### 💻 Seamless Raycast Integration
+
+Access powerful file sharing right from your productivity command center - no need to switch contexts or open another app.
+
+## How It Works
+
+1. **Share Files**: Select any file or folder to share
+2. **Get a Ticket**: A unique ticket is generated and copied to your clipboard
+3. **Send the Ticket**: Share the ticket with the recipient via any messaging app
+4. **Recipient Downloads**: They paste the ticket and receive the file directly from your machine
+
+## Features
+
+- **Share Files & Folders**: Share single files or entire directories
+- **Active Session Management**: View and manage all your ongoing sharing sessions
+- **Terminal Fallback**: For complex scenarios, option to run in Terminal
+- **Progress Tracking**: Monitor downloads in real-time
+- **Simple Recovery**: Automatically recovers sessions after restarts
+- **Clipboard Integration**: Automatically detects tickets in your clipboard
+
+## No Servers, No Limits
+
+Unlike traditional file sharing services:
+
+- No file size limits
+- No accounts or logins required
+- No third-party servers involved
+
+## Getting Started
+
+1. Install [sendme](https://github.com/nazifishrak/sendme-extension) on your system
+2. Install this Raycast extension
+3. Use the "Share File" command to begin sharing
+
+
+## Privacy & Security
+
+Because Sendme uses direct P2P connections powered by Iroh's technology:
+
+- Your files never pass through any servers
+- All connections are encrypted end-to-end
+- No data is stored in the cloud
+- No metadata about your transfers is collected
+
+---
+
+Built by Nazif with ❤️ for the Raycast community
