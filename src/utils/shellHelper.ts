@@ -59,8 +59,9 @@ export async function installSendmeWithBrewViaTerminal(): Promise<boolean> {
   });
   
   // Use Terminal to run the brew command
+  //Only when raycast didnt able to execute this
   await runInTerminal("brew install sendme");
-  
+  //If the above fails then try manual curling -->ok for now might change it later
   await showHUD("Homebrew installation started in Terminal");
   return true;
 }
