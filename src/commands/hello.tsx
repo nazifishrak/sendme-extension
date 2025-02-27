@@ -1,3 +1,3 @@
 export const HelloCommand = () => {
-    console.log("Hello from Raycast!");
+  console.log("Hello from Raycast!");
 };

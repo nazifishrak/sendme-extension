@@ -74,7 +74,7 @@ export default function ReceiveCommand() {
   const showDownloadDetails = (
     output: string,
     targetDir: string,
-    error?: Error
+    error?: Error,
   ) => {
     push(
       <Detail
@@ -109,14 +109,14 @@ ${!error ? `\n\nFiles were downloaded to: \`${targetDir}\`` : ""}
             />
           </ActionPanel>
         }
-      />
+      />,
     );
   };
 
   // Process to download file with real-time output
   const downloadFile = async (
     ticket: string,
-    targetDir: string
+    targetDir: string,
   ): Promise<string> => {
     return new Promise((resolve, reject) => {
       try {
@@ -173,7 +173,7 @@ ${!error ? `\n\nFiles were downloaded to: \`${targetDir}\`` : ""}
   // Terminal fallback for downloading
   const runInTerminal = async (
     ticket: string,
-    targetDir: string
+    targetDir: string,
   ): Promise<void> => {
     // Escape special characters in paths
     const escapedPath = targetDir.replace(/"/g, '\\"');
@@ -221,7 +221,7 @@ ${!error ? `\n\nFiles were downloaded to: \`${targetDir}\`` : ""}
       // Validate ticket format
       if (!isValidTicket(ticket)) {
         throw new Error(
-          "Invalid ticket format. Tickets should start with 'blob' followed by alphanumeric characters."
+          "Invalid ticket format. Tickets should start with 'blob' followed by alphanumeric characters.",
         );
       }
 
@@ -309,7 +309,7 @@ ${!error ? `\n\nFiles were downloaded to: \`${targetDir}\`` : ""}
             onSubmit={handleSubmit}
           />
           <Action
-            title="Download via Terminal"
+            title="Download Via Terminal"
             icon={Icon.Terminal}
             onAction={handleTerminalAction}
             shortcut={{ modifiers: ["cmd"], key: "t" }}

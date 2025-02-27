@@ -11,7 +11,7 @@ export const globalSessions = {
   listeners: new Set<() => void>(),
 
   addSession(session: ShareSession) {
-    if (this.sessions.some(s => s.id === session.id)) return;
+    if (this.sessions.some((s) => s.id === session.id)) return;
     this.sessions.push(session);
     this.notifyListeners();
   },
@@ -63,12 +63,12 @@ export const globalSessions = {
       const stored = await LocalStorage.getItem<string>(STORAGE_KEY);
       if (stored) {
         const sessions = JSON.parse(stored) as StoredSession[];
-        sessions.forEach(s => {
+        sessions.forEach((s) => {
           const session: ShareSession = {
             ...s,
             process: null,
             startTime: new Date(s.startTime),
-            isDetached: true
+            isDetached: true,
           };
           this.addSession(session);
         });
@@ -79,7 +79,7 @@ export const globalSessions = {
   },
 
   async stopSession(id: string) {
-    const session = this.sessions.find(s => s.id === id);
+    const session = this.sessions.find((s) => s.id === id);
     if (!session) return;
 
     try {
@@ -107,7 +107,7 @@ export const globalSessions = {
 
   async stopAllSessions(): Promise<void> {
     const sessionsToStop = [...this.sessions];
-    
+
     for (const session of sessionsToStop) {
       try {
         await this.stopSession(session.id);
@@ -115,9 +115,9 @@ export const globalSessions = {
         console.error(`Error stopping session ${session.id}:`, error);
       }
     }
-    
+
     this.sessions = [];
     this.notifyListeners();
     await this.persistSessions();
-  }
+  },
 };

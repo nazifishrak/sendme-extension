@@ -1,8 +1,7 @@
 import { showToast, Toast, Clipboard } from "@raycast/api";
-import { ShareSession } from "../types";
-import { globalSessions } from "../sessionManager";
+// Remove the unused import
 import { startSendmeProcess } from "./sendme";
-import { sendmeInTerminal } from "./terminal";
+// Remove unused import for sendmeInTerminal
 
 export interface FileShareResult {
   successCount: number;
@@ -12,13 +11,15 @@ export interface FileShareResult {
   failedFiles: string[];
 }
 
-export async function shareMultipleFiles(filePaths: string[]): Promise<FileShareResult> {
+export async function shareMultipleFiles(
+  filePaths: string[],
+): Promise<FileShareResult> {
   const result: FileShareResult = {
     successCount: 0,
     failureCount: 0,
     lastTicket: "",
     successFiles: [],
-    failedFiles: []
+    failedFiles: [],
   };
 
   if (!filePaths?.length) {
@@ -63,18 +64,19 @@ export async function processFile(filePath: string): Promise<{
     return {
       success: true,
       fileName,
-      ticket
+      ticket,
     };
   } catch (error) {
     console.error(`Failed to process file: ${filePath}`, error);
     return {
       success: false,
       fileName: filePath.split("/").pop() || "",
-      ticket: ""
+      ticket: "",
     };
   }
 }
 
+// Update showShareResults to avoid using sendmeInTerminal directly
 export async function showShareResults(result: FileShareResult): Promise<void> {
   if (result.successCount > 0) {
     if (result.failureCount > 0) {
@@ -88,9 +90,10 @@ export async function showShareResults(result: FileShareResult): Promise<void> {
       // All succeeded
       await showToast({
         style: Toast.Style.Success,
-        title: result.successCount === 1
-          ? `File shared: ${result.successFiles[0]}`
-          : `${result.successCount} files shared successfully`,
+        title:
+          result.successCount === 1
+            ? `File shared: ${result.successFiles[0]}`
+            : `${result.successCount} files shared successfully`,
         message: "Ticket copied to clipboard",
       });
     }
@@ -102,7 +105,14 @@ export async function showShareResults(result: FileShareResult): Promise<void> {
       message: "Try using Terminal fallback",
       primaryAction: {
         title: "Use Terminal",
-        onAction: () => sendmeInTerminal(result.failedFiles[0]),
+        onAction: () => {
+          // Instead of direct reference, create a safer fallback
+          if (result.failedFiles.length > 0) {
+            import("./terminal").then(({ sendmeInTerminal }) => {
+              sendmeInTerminal(result.failedFiles[0]);
+            });
+          }
+        },
       },
     });
   }

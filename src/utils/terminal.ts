@@ -6,7 +6,7 @@ const execAsync = promisify(exec);
 
 export const runInTerminal = async (command: string): Promise<void> => {
   // Check if we're on macOS
-  if (platform() !== 'darwin') {
+  if (platform() !== "darwin") {
     throw new Error("Terminal commands are only supported on macOS");
   }
 

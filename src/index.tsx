@@ -8,7 +8,7 @@ import {
   useNavigation,
   Icon,
 } from "@raycast/api";
-import { ShareSession } from "./types";
+// Add the missing import for globalSessions
 import { globalSessions } from "./sessionManager";
 import { SessionsList } from "./components/SessionsList";
 import { handleError } from "./utils/errors";
@@ -76,7 +76,6 @@ export default function Command() {
           message: "Starting file sharing...",
         });
       }
-
 
       const result = await shareMultipleFiles(filePaths);
 
