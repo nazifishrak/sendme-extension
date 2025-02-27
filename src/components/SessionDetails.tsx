@@ -23,7 +23,9 @@ export function SessionDetails({ session, onClose }: SessionDetailsProps) {
       title: `Stop sharing ${session.fileName}?`,
       message:
         "This will terminate the sendme process and prevent further downloads.",
-      primaryAction: { title: "Stop Sharing", style: "destructive" },
+      primaryAction: {
+        title: "Stop Sharing",
+      },
     });
 
     if (!confirmed) return;
@@ -67,6 +69,12 @@ sendme receive ${session.ticket}
 - **Session ID:** ${session.id}
 ${session.pid ? `- **Process ID:** ${session.pid}` : ""}
 ${session.isDetached ? `\n> ⚠️ This is a recovered session from a previous run.` : ""}
+
+## Keyboard Shortcuts
+
+- **⌘C** - Copy ticket to clipboard
+- **⌘⌫** - Stop sharing this file
+- **⌘←** - Return to sessions list
 `;
 
   return (
@@ -84,19 +92,30 @@ ${session.isDetached ? `\n> ⚠️ This is a recovered session from a previous r
                 title: "Ticket Copied",
               });
             }}
+            shortcut={{ modifiers: ["cmd"], key: "c" }}
           />
           <Action
             title="Stop Sharing"
             icon={Icon.Stop}
             style={Action.Style.Destructive}
             onAction={stopSession}
+            shortcut={{ modifiers: ["cmd"], key: "backspace" }}
           />
           <Action
             title="Back to Sessions List"
             icon={Icon.ArrowLeft}
             onAction={onClose}
+            shortcut={{ modifiers: ["cmd"], key: "arrowLeft" }}
           />
         </ActionPanel>
+      }
+      metadata={
+        <Detail.Metadata>
+          <Detail.Metadata.Label
+            title="Actions"
+            text="Press ⌘C to copy, ⌘⌫ to stop sharing"
+          />
+        </Detail.Metadata>
       }
     />
   );

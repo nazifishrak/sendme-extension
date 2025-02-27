@@ -73,6 +73,18 @@ export function SessionsList() {
     <List
       isLoading={isLoading}
       searchBarPlaceholder="Search active sharing sessions..."
+      navigationTitle="Manage Sharing Sessions"
+      searchBarAccessory={
+        <List.Dropdown
+          tooltip="Keyboard shortcuts"
+          storeValue={false}
+          onChange={() => {}}
+        >
+          <List.Dropdown.Item title="⌘D - View details" value="details" />
+          <List.Dropdown.Item title="⌘C - Copy ticket" value="copy" />
+          <List.Dropdown.Item title="⌘⌫ - Stop sharing" value="stop" />
+        </List.Dropdown>
+      }
     >
       {sessions.map((session) => (
         <List.Item
@@ -86,6 +98,10 @@ export function SessionsList() {
               tooltip: session.isDetached
                 ? "Recovered session from previous run"
                 : "Sharing active",
+            },
+            {
+              tooltip: "⌘⌫ to stop sharing",
+              icon: { source: Icon.Stop, tintColor: Color.Red },
             },
           ]}
           detail={
@@ -116,6 +132,20 @@ export function SessionsList() {
                     title="Ticket"
                     text={session.ticket}
                   />
+                  <List.Item.Detail.Metadata.TagList title="Actions">
+                    <List.Item.Detail.Metadata.TagList.Item
+                      text="⌘D View Details"
+                      color={Color.Blue}
+                    />
+                    <List.Item.Detail.Metadata.TagList.Item
+                      text="⌘C Copy Ticket"
+                      color={Color.Purple}
+                    />
+                    <List.Item.Detail.Metadata.TagList.Item
+                      text="⌘⌫ Stop Sharing"
+                      color={Color.Red}
+                    />
+                  </List.Item.Detail.Metadata.TagList>
                 </List.Item.Detail.Metadata>
               }
             />

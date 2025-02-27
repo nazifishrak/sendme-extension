@@ -113,7 +113,7 @@ export default function Command() {
       />
       {sessionCount > 0 && (
         <Form.Description
-          title="Active Sessions"
+          title={`Active Sessions (⌘⇧U to manage)`}
           text={`You have ${sessionCount} active sharing session(s)`}
         />
       )}
