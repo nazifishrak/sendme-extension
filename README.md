@@ -58,9 +58,30 @@ Unlike traditional file sharing services:
 
 ## Getting Started
 
-1. Install [sendme](https://github.com/nazifishrak/sendme-extension) on your system
-2. Install this Raycast extension
-3. Use the "Share File" command to begin sharing
+### Installation
+This extension is currently not available on the Raycast Extension store, but installation from source is extremely simple.
+
+You need to have nodejs installed to install it locally
+
+Download the source code from the latest release, or clone the repository by running `git clone git@github.com:nazifishrak/sendme-extension.git`
+
+Navigate to the directory where it is downloaded, and open a Terminal window at the downloaded folder.
+
+Run `npm install`
+Run `npm run dev` to build and import the extension.
+The extension, and its full set of commands, should then show up in your Raycast app.
+
+Troubleshooting
+The extension looks for homebrew to install sendme, if homebrew isn't found it tries to install in another way. But in anycase if this doesn't work and you get error saying sendme isn't installed
+please run this command
+`curl -fsSL https://iroh.computer/sendme.sh -o ~/sendme`
+
+`chmod +x ~/sendme`
+
+Now try raycast again
+
+
+
 
 
 ## Privacy & Security
