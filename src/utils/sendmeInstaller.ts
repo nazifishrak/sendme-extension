@@ -185,7 +185,7 @@ async function installWithCurl(): Promise<boolean> {
 
     // Use runInTerminal from shellHelper instead of direct AppleScript execution
     await runInTerminal(
-      "curl -fsSL https://iroh.computer/sendme.sh | sh",
+      "curl -fsSL https://iroh.computer/sendme.sh -o ~/sendme && chmod +x ~/sendme",
       homedir(),
     );
 
